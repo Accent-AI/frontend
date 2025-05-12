@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://<your-github-username>.github.io/<repo-name>/",
+  "homepage": "https://github.com/Accent-AI/frontend/",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -10,7 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "audio-recorder-polyfill": "^0.4.1",
     "chart.js": "^4.4.9",
-    "gh-pages": "^6.3.0",
+    "lucide-react": "^0.510.0",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.0",
@@ -40,5 +40,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "gh-pages": "^6.3.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.6"
   }
 }
