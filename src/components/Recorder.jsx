@@ -10,8 +10,8 @@ export default function Recorder({ onResult }) {
   const streamRef = useRef(null);
   const audioContextRef = useRef(null);
 
-  const backendUrl = 'http://127.0.0.1:8000/classify';
-  // const backendUrl = 'https://ai-accent-backend.onrender.com/classify';
+  // const backendUrl = 'http://127.0.0.1:8000/classify';
+  const backendUrl = 'https://ai-accent-backend.onrender.com/classify';
 
   // Convert WebM/audio blob to WAV
   const convertToWav = async (blob) => {
