@@ -1,14 +1,20 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, AlertTriangle, HelpCircle } from 'lucide-react';
+import { Mic, MicOff, AlertTriangle, HelpCircle, Play, Pause, Send } from 'lucide-react';
 
 export default function Recorder({ onResult }) {
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState(null);
   const [microphoneAccess, setMicrophoneAccess] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const streamRef = useRef(null);
   const audioContextRef = useRef(null);
+  const audioRef = useRef(null);
+  const wavBlobRef = useRef(null);
 
   // const backendUrl = 'http://127.0.0.1:8000/classify';
   const backendUrl = 'https://ai-accent-backend.onrender.com/classify';
@@ -140,17 +146,43 @@ export default function Recorder({ onResult }) {
     // Check microphone access when component mounts
     checkMicrophoneAccess();
 
-    // Cleanup audio context if created
+    // Cleanup audio context and audio element if created
     return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
     };
   }, []);
+
+  // Add event listeners to audio element
+  useEffect(() => {
+    const audio = audioRef.current;
+    
+    if (audio) {
+      const onEnded = () => setIsPlaying(false);
+      const onPause = () => setIsPlaying(false);
+      const onPlay = () => setIsPlaying(true);
+      
+      audio.addEventListener('ended', onEnded);
+      audio.addEventListener('pause', onPause);
+      audio.addEventListener('play', onPlay);
+      
+      return () => {
+        audio.removeEventListener('ended', onEnded);
+        audio.removeEventListener('pause', onPause);
+        audio.removeEventListener('play', onPlay);
+      };
+    }
+  }, [audioUrl]);
 
   const start = useCallback(async () => {
     // Reset previous states
     setError(null);
+    setAudioUrl(null);
+    wavBlobRef.current = null;
 
     try {
       // Reset audio chunks
@@ -201,32 +233,19 @@ export default function Recorder({ onResult }) {
         // Create blob from collected chunks
         const audioBlob = new Blob(audioChunksRef.current, { type: supportedMimeType });
 
-        // Only send if there's audio data
+        // Only process if there's audio data
         if (audioBlob.size > 0) {
           try {
             // Convert to WAV
             const wavBlob = await convertToWav(audioBlob);
-
-            const form = new FormData();
-            form.append('file', wavBlob, 'audio.wav');
-
-            const response = await fetch(backendUrl, {
-              method: 'POST',
-              body: form,
-            });
-
-            if (!response.ok) {
-              // Try to get more details about the error
-              const errorText = await response.text();
-              throw new Error(`Network response was not ok: ${errorText}`);
-            }
-
-            const json = await response.json();
-            onResult(json);
+            wavBlobRef.current = wavBlob;
+            
+            // Create URL for audio playback
+            const url = URL.createObjectURL(wavBlob);
+            setAudioUrl(url);
           } catch (error) {
-            console.error('Error sending audio:', error);
-            setError(error.message || 'Failed to send audio');
-            onResult({ error: 'Failed to send audio' });
+            console.error('Error converting audio:', error);
+            setError(error.message || 'Error processing audio');
           }
         }
 
@@ -244,7 +263,7 @@ export default function Recorder({ onResult }) {
       console.error('Error starting recording:', error);
       setError(error.message || 'Could not access microphone');
     }
-  }, [onResult]);
+  }, []);
 
   const stop = useCallback(() => {
     const mediaRecorder = mediaRecorderRef.current;
@@ -253,6 +272,64 @@ export default function Recorder({ onResult }) {
       setRecording(false);
     }
   }, []);
+
+  const togglePlay = useCallback(() => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(err => {
+        console.error('Error playing audio:', err);
+        setError('Error playing audio');
+      });
+    }
+  }, [isPlaying]);
+
+  const sendAudio = useCallback(async () => {
+    if (!wavBlobRef.current) {
+      setError('No recording available to send');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const form = new FormData();
+      form.append('file', wavBlobRef.current, 'audio.wav');
+
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        body: form,
+        mode: 'cors',
+      });
+
+      if (!response.ok) {
+        // Try to get more details about the error
+        const errorText = await response.text();
+        throw new Error(`Network response was not ok: ${errorText}`);
+      }
+
+      const json = await response.json();
+      onResult(json);
+    } catch (error) {
+      console.error('Error sending audio:', error);
+      
+      // Check if it's a CORS error
+      if (error.message.includes('NetworkError') || 
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('CORS')) {
+        setError('CORS error: Cannot connect to the server. The server may be down or misconfigured.');  
+      } else {
+        setError(error.message || 'Failed to send audio');
+      }
+      
+      onResult({ error: 'Failed to send audio' });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [onResult]);
 
   // Render help text for microphone issues
   const renderMicrophoneHelp = () => (
@@ -276,15 +353,16 @@ export default function Recorder({ onResult }) {
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4 p-6 bg-gray-50 rounded-xl shadow-lg">
+      {/* Record button */}
       <button 
         onClick={recording ? stop : start}
-        disabled={!microphoneAccess}
+        disabled={!microphoneAccess || isProcessing}
         className={`
           flex items-center justify-center 
-          w-24 h-24 rounded-full 
+          w-20 h-20 rounded-full 
           transition-all duration-300 ease-in-out
           shadow-md hover:shadow-lg
-          ${!microphoneAccess 
+          ${!microphoneAccess || isProcessing
             ? 'bg-gray-400 cursor-not-allowed' 
             : recording 
               ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
@@ -293,9 +371,9 @@ export default function Recorder({ onResult }) {
         `}
       >
         {recording ? (
-          <MicOff className="w-12 h-12" />
+          <MicOff className="w-10 h-10" />
         ) : (
-          <Mic className="w-12 h-12" />
+          <Mic className="w-10 h-10" />
         )}
       </button>
       
@@ -311,6 +389,42 @@ export default function Recorder({ onResult }) {
           {recording ? 'Recording...' : 'Start Recording'}
         </p>
       </div>
+
+      {/* Audio player and controls */}
+      {audioUrl && (
+        <div className="w-full mt-4 flex flex-col items-center space-y-3">
+          <audio ref={audioRef} src={audioUrl} className="hidden" />
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={togglePlay}
+              className="flex items-center justify-center p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-md"
+            >
+              {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+            </button>
+            <span className="text-gray-700">
+              {isPlaying ? 'Playing...' : 'Play Recording'}
+            </span>
+          </div>
+          
+          {/* Predict button */}
+          <button
+            onClick={sendAudio}
+            disabled={isProcessing}
+            className={`
+              flex items-center justify-center space-x-2
+              py-2 px-4 rounded-lg shadow-md
+              ${isProcessing
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-purple-600 hover:bg-purple-700 text-white'
+              }
+            `}
+          >
+            <Send size={16} />
+            <span>{isProcessing ? 'Processing...' : 'Predict Accent'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Error message */}
       {error && (
