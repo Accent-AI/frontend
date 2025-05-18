@@ -17,7 +17,8 @@ export default function Recorder({ onResult }) {
   const wavBlobRef = useRef(null);
 
   // const backendUrl = 'http://127.0.0.1:8000/classify';
-  const backendUrl = 'https://ai-accent-backend.onrender.com/classify';
+  // const backendUrl = 'https://ai-accent-backend.onrender.com/classify';
+  const backendUrl = 'https://staging.accentify.co.uk/classify';
 
   // Convert WebM/audio blob to WAV
   const convertToWav = async (blob) => {
