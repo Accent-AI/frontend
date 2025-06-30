@@ -24,7 +24,8 @@ export default function ResultsChart({ data }) {
     accent = 'Unknown', 
     probabilities = [], 
     accents = [], 
-    score = 0 
+    score = 0 ,
+    message = ''
   } = data;
 
   // Ensure accents and probabilities have the same length
@@ -104,6 +105,15 @@ export default function ResultsChart({ data }) {
           <ChartBar className="mr-2 text-blue-600" size={24} />
           Prediction Results
         </h2>
+        {message && (
+          
+          <div className="text-sm text-gray-500 italic">
+            <h3>
+              AI Message:
+            </h3>
+            {message}
+          </div>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 items-center">
