@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { ChartBar, Trophy, Target, AlertTriangle } from 'lucide-react';
 import 'chart.js/auto';
+import { motion } from 'framer-motion';
 
 export default function ResultsChart({ data }) {
   // Log the entire data object for debugging
@@ -99,46 +100,62 @@ export default function ResultsChart({ data }) {
     : '0';
 
   return (
-    <div className="bg-white shadow-lg rounded-xl p-6 w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-          <ChartBar className="mr-2 text-blue-600" size={24} />
+    <motion.div 
+      className="bg-white shadow-2xl rounded-3xl p-8 w-full animate-fade-in"
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-3xl font-extrabold text-indigo-700 flex items-center drop-shadow-sm">
+          <ChartBar className="mr-2 text-blue-600" size={28} />
           Prediction Results
         </h2>
         {message && (
-          
-          <div className="text-sm text-gray-500 italic">
-            <h3>
-              AI Message:
-            </h3>
+          <div className="text-sm text-gray-500 italic max-w-xs text-right">
+            <h3 className="font-semibold text-indigo-400">AI Message:</h3>
             {message}
           </div>
         )}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 items-center">
-        <div className="w-full">
+      <div className="grid md:grid-cols-2 gap-8 items-center">
+        <motion.div 
+          className="w-full"
+          initial={{ scale: 0.95 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
           <Bar data={chartData} options={chartOptions} />
-        </div>
+        </motion.div>
 
-        <div className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-lg shadow-sm">
+        <div className="space-y-6">
+          <motion.div 
+            className="bg-gradient-to-r from-blue-100 to-blue-50 p-5 rounded-2xl shadow-md border border-blue-200"
+            whileHover={{ scale: 1.03 }}
+          >
             <div className="flex items-center mb-2">
-              <Trophy className="mr-2 text-yellow-500" size={20} />
+              <Trophy className="mr-2 text-yellow-500" size={22} />
               <h3 className="font-semibold text-gray-700">Detected Accent</h3>
             </div>
-            <p className="text-xl font-bold text-blue-700">{accent}</p>
-          </div>
+            <p className="text-2xl font-extrabold text-blue-700 tracking-wide animate-pulse">{accent}</p>
+          </motion.div>
 
-          <div className="bg-green-50 p-4 rounded-lg shadow-sm">
+          <motion.div 
+            className="bg-gradient-to-r from-green-100 to-green-50 p-5 rounded-2xl shadow-md border border-green-200"
+            whileHover={{ scale: 1.03 }}
+          >
             <div className="flex items-center mb-2">
-              <Target className="mr-2 text-green-500" size={20} />
+              <Target className="mr-2 text-green-500" size={22} />
               <h3 className="font-semibold text-gray-700">Confidence</h3>
             </div>
-            <p className="text-xl font-bold text-green-700">{(score * 100).toFixed(2)}%</p>
-          </div>
+            <p className="text-2xl font-extrabold text-green-700 tracking-wide">{(score * 100).toFixed(2)}%</p>
+          </motion.div>
 
-          <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+          <motion.div 
+            className="bg-gradient-to-r from-gray-100 to-gray-50 p-5 rounded-2xl shadow-md border border-gray-200"
+            whileHover={{ scale: 1.03 }}
+          >
             <h3 className="font-semibold text-gray-700 mb-2">Accent Probabilities</h3>
             <ul className="space-y-1">
               {accents.map((accent, index) => (
@@ -148,9 +165,9 @@ export default function ResultsChart({ data }) {
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

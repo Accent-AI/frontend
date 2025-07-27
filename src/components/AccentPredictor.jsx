@@ -1,16 +1,17 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, AlertTriangle, HelpCircle, Play, Pause, Send } from 'lucide-react';
+import { Mic, MicOff, AlertTriangle, HelpCircle, Play, Pause, Send, Target, TrendingUp } from 'lucide-react';
 import BACKEND_BASE_URL from '../service/backend';
 
-export default function Recorder({ onResult }) {
+export default function AccentPredictor({ onResult }) {
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState(null);
   const [microphoneAccess, setMicrophoneAccess] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds
+  const [selectedAccent, setSelectedAccent] = useState('US');
+  const [availableAccents, setAvailableAccents] = useState([]);
+  const [loadingAccents, setLoadingAccents] = useState(true);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -19,6 +20,35 @@ export default function Recorder({ onResult }) {
   const audioRef = useRef(null);
   const wavBlobRef = useRef(null);
 
+
+  // Available accents for dropdown
+  const defaultAccents = [
+    'US', 'England', 'Australia', 'Indian', 'Canada', 'Bermuda', 'Scotland',
+    'African', 'Ireland', 'New Zealand', 'Wales', 'Malaysia', 'Philippines',
+    'Singapore', 'Hong Kong', 'Southatlandtic'
+  ];
+
+  // Fetch available accents from backend
+  useEffect(() => {
+    const fetchAccents = async () => {
+      try {
+        const response = await fetch(`${BACKEND_BASE_URL}/available_accents`);
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableAccents(data.accents || defaultAccents);
+        } else {
+          setAvailableAccents(defaultAccents);
+        }
+      } catch (error) {
+        console.error('Error fetching accents:', error);
+        setAvailableAccents(defaultAccents);
+      } finally {
+        setLoadingAccents(false);
+      }
+    };
+
+    fetchAccents();
+  }, []);
 
   // Convert WebM/audio blob to WAV
   const convertToWav = async (blob) => {
@@ -101,7 +131,6 @@ export default function Recorder({ onResult }) {
       offset++;
     }
 
-    // Helper to set uint values
     function setUint16(data) {
       view.setUint16(pos, data, true);
       pos += 2;
@@ -115,82 +144,47 @@ export default function Recorder({ onResult }) {
     return new Blob([buffer], { type: 'audio/wav' });
   };
 
-  // Check microphone permissions on component mount
+  const checkMicrophoneAccess = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicrophoneAccess(true);
+      stream.getTracks().forEach(track => track.stop());
+    } catch (error) {
+      console.error('Microphone access denied:', error);
+      setMicrophoneAccess(false);
+    }
+  };
+
   useEffect(() => {
-    const checkMicrophoneAccess = async () => {
-      try {
-        // Try to get user media with more flexible constraints
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: true 
-        });
-        
-        // If successful, stop the tracks immediately
-        stream.getTracks().forEach(track => track.stop());
-        
-        setMicrophoneAccess(true);
-        setError(null);
-      } catch (err) {
-        console.error('Microphone access error:', err);
-        setMicrophoneAccess(false);
-        
-        // Provide more specific error messages
-        if (err.name === 'NotAllowedError') {
-          setError('Microphone access blocked. Please check your browser settings and permissions.');
-        } else if (err.name === 'NotFoundError') {
-          setError('No microphone found. Please connect a microphone and try again.');
-        } else {
-          setError(`Could not access microphone: ${err.message}`);
-        }
-      }
-    };
-
-    // Check microphone access when component mounts
     checkMicrophoneAccess();
-
-    // Cleanup audio context and audio element if created
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
-    };
   }, []);
 
-  // Add event listeners to audio element
   useEffect(() => {
-    const audio = audioRef.current;
-    
-    if (audio) {
+    if (audioRef.current) {
       const onEnded = () => setIsPlaying(false);
       const onPause = () => setIsPlaying(false);
       const onPlay = () => setIsPlaying(true);
-      
-      audio.addEventListener('ended', onEnded);
-      audio.addEventListener('pause', onPause);
-      audio.addEventListener('play', onPlay);
-      
+
+      audioRef.current.addEventListener('ended', onEnded);
+      audioRef.current.addEventListener('pause', onPause);
+      audioRef.current.addEventListener('play', onPlay);
+
       return () => {
-        audio.removeEventListener('ended', onEnded);
-        audio.removeEventListener('pause', onPause);
-        audio.removeEventListener('play', onPlay);
+        if (audioRef.current) {
+          audioRef.current.removeEventListener('ended', onEnded);
+          audioRef.current.removeEventListener('pause', onPause);
+          audioRef.current.removeEventListener('play', onPlay);
+        }
       };
     }
   }, [audioUrl]);
 
   const start = useCallback(async () => {
-    // Reset previous states
-    setError(null);
-    setAudioUrl(null);
-    wavBlobRef.current = null;
-
     try {
-      // Reset audio chunks
+      setError(null);
       audioChunksRef.current = [];
 
-      // Get user media with more flexible constraints
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: { ideal: true },
           autoGainControl: { ideal: true },
@@ -299,8 +293,9 @@ export default function Recorder({ onResult }) {
     try {
       const form = new FormData();
       form.append('file', wavBlobRef.current, 'audio.wav');
+      form.append('target_accent', selectedAccent);
 
-      const response = await fetch(BACKEND_BASE_URL + '/classify', {
+      const response = await fetch(`${BACKEND_BASE_URL}/classify_accent`, {
         method: 'POST',
         body: form,
         mode: 'cors',
@@ -313,7 +308,7 @@ export default function Recorder({ onResult }) {
       }
 
       const json = await response.json();
-      console.log(json);
+      console.log('Accent similarity result:', json);
       onResult(json);
     } catch (error) {
       console.error('Error sending audio:', error);
@@ -331,7 +326,7 @@ export default function Recorder({ onResult }) {
     } finally {
       setIsProcessing(false);
     }
-  }, [onResult]);
+  }, [onResult, selectedAccent]);
 
   // Render help text for microphone issues
   const renderMicrophoneHelp = () => (
@@ -355,6 +350,26 @@ export default function Recorder({ onResult }) {
 
   return (
     <div className="flex flex-col items-center justify-center space-y-4 p-6 bg-gray-50 rounded-xl shadow-lg">
+      {/* Accent Selection */}
+      <div className="w-full max-w-xs">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <Target className="inline mr-2" size={16} />
+          Compare against accent:
+        </label>
+        <select
+          value={selectedAccent}
+          onChange={(e) => setSelectedAccent(e.target.value)}
+          disabled={loadingAccents}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+        >
+          {availableAccents.map((accent) => (
+            <option key={accent} value={accent}>
+              {accent}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Record button */}
       <button 
         onClick={recording ? stop : start}
@@ -409,7 +424,7 @@ export default function Recorder({ onResult }) {
             </span>
           </div>
           
-          {/* Predict button */}
+          {/* Predict 2 button */}
           <button
             onClick={sendAudio}
             disabled={isProcessing}
@@ -422,8 +437,8 @@ export default function Recorder({ onResult }) {
               }
             `}
           >
-            <Send size={16} />
-            <span>{isProcessing ? 'Processing...' : 'Predict Accent'}</span>
+            <TrendingUp size={16} />
+            <span>{isProcessing ? 'Analyzing...' : `Compare with ${selectedAccent}`}</span>
           </button>
         </div>
       )}
@@ -440,4 +455,4 @@ export default function Recorder({ onResult }) {
       {!microphoneAccess && renderMicrophoneHelp()}
     </div>
   );
-}
+} 
