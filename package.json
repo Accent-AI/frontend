@@ -10,6 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "audio-recorder-polyfill": "^0.4.1",
     "chart.js": "^4.4.9",
+    "framer-motion": "^12.23.9",
     "lucide-react": "^0.510.0",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
