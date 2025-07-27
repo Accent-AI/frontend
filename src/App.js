@@ -12,7 +12,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('classify'); // 'classify' or 'compare'
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden">
+    <div className=" relative min-h-screen flex flex-col items-center justify-center px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-6 text-center overflow-hidden">
       {/* Animated background shapes */}
       <motion.div
         className="absolute inset-0 z-0 pointer-events-none"
@@ -25,51 +25,109 @@ function App() {
       </motion.div>
       {/* Main card */}
       <motion.div
-        className="relative z-10 bg-white/90 backdrop-blur-2xl shadow-2xl rounded-3xl p-10 w-full max-w-2xl space-y-8 border border-white/40 transition-all duration-300 hover:scale-[1.01]"
+        className="relative z-10 bg-white/90 backdrop-blur-2xl shadow-2xl rounded-3xl p-8 sm:p-10 lg:p-12 w-full max-w-2xl space-y-8 border border-white/40 transition-all duration-300 hover:scale-[1.01]"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
       >
         <motion.h1
-          className="text-5xl font-extrabold text-center text-indigo-800 drop-shadow-md leading-tight mb-2 tracking-tight"
+          className="text-4xl sm:text-5xl font-extrabold text-center text-indigo-800 drop-shadow-md leading-tight mb-2 tracking-tight"
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.5 }}
         >
           <span className="inline-block animate-fade-in">🎙️ Accentify</span>
         </motion.h1>
-        <p className="text-lg text-indigo-500 font-medium mb-4 animate-fade-in">
+        <p className="text-base sm:text-lg text-indigo-500 font-medium mb-4 animate-fade-in">
           Discover and compare your accent with AI-powered analysis
         </p>
         {/* Tab Navigation */}
-        <div className="flex bg-gradient-to-r from-indigo-100 via-white to-purple-100 rounded-xl p-2 shadow-inner mb-4 gap-2">
+        <div className="relative flex bg-gradient-to-r from-indigo-50 via-white to-purple-50 rounded-2xl p-1.5 shadow-lg border border-white/60 mb-6 gap-1">
+          {/* Active tab background indicator */}
+          <motion.div
+            className={`absolute top-1.5 bottom-1.5 rounded-xl shadow-lg border border-white/40 ${
+              activeTab === 'classify' 
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700' 
+                : 'bg-gradient-to-r from-purple-600 to-purple-700'
+            }`}
+            initial={false}
+            animate={{
+              x: activeTab === 'classify' ? '0%' : '100%',
+            }}
+            style={{
+              left: '6px',
+              width: 'calc(50% - 8px)'
+            }}
+            transition={{ 
+              type: 'spring', 
+              stiffness: 300, 
+              damping: 30,
+              duration: 0.3
+            }}
+          />
+          
           <button
             onClick={() => {
               setActiveTab('classify');
               setResults(null);
               setSimilarityResults(null);
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-base font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:z-10 shadow-md hover:scale-105 ${
+            className={`relative z-10 flex-1 flex items-center justify-center gap-2 py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400 hover:scale-[1.02] ${
               activeTab === 'classify'
-                ? 'bg-indigo-600 text-white scale-105'
-                : 'bg-white text-indigo-700 hover:bg-indigo-50'
+                ? 'text-white shadow-lg'
+                : 'text-indigo-700 hover:text-indigo-800 hover:bg-indigo-50/50'
             }`}
           >
-            <Mic size={20} /> Predict Accent
+            <motion.div
+              animate={{ 
+                scale: activeTab === 'classify' ? 1.1 : 1,
+                rotate: activeTab === 'classify' ? 5 : 0
+              }}
+              transition={{ duration: 0.2 }}
+            >
+              <Mic size={20} />
+            </motion.div>
+            <span className="font-extrabold tracking-wide">Predict Accent</span>
+            {activeTab === 'classify' && (
+              <motion.div
+                className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full shadow-md"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.1, type: 'spring', stiffness: 400 }}
+              />
+            )}
           </button>
+          
           <button
             onClick={() => {
               setActiveTab('compare');
               setResults(null);
               setSimilarityResults(null);
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-base font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:z-10 shadow-md hover:scale-105 ${
+            className={`relative z-10 flex-1 flex items-center justify-center gap-2 py-4 px-4 sm:px-6 rounded-xl text-sm sm:text-base font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-400 hover:scale-[1.02] ${
               activeTab === 'compare'
-                ? 'bg-purple-600 text-white scale-105'
-                : 'bg-white text-purple-700 hover:bg-purple-50'
+                ? 'text-white shadow-lg'
+                : 'text-purple-700 hover:text-purple-800 hover:bg-purple-50/50'
             }`}
           >
-            <BarChart3 size={20} /> Compare Accent
+            <motion.div
+              animate={{ 
+                scale: activeTab === 'compare' ? 1.1 : 1,
+                rotate: activeTab === 'compare' ? -5 : 0
+              }}
+              transition={{ duration: 0.2 }}
+            >
+              <BarChart3 size={20} />
+            </motion.div>
+            <span className="font-extrabold tracking-wide">Compare Accent</span>
+            {activeTab === 'compare' && (
+              <motion.div
+                className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full shadow-md"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.1, type: 'spring', stiffness: 400 }}
+              />
+            )}
           </button>
         </div>
         {/* Main content area */}
@@ -97,7 +155,7 @@ function App() {
         {/* Helper text */}
         {!results && !similarityResults && (
           <motion.p
-            className="text-center text-gray-600 text-base mt-6 leading-relaxed animate-fade-in"
+            className="text-center text-gray-600 text-sm sm:text-base mt-6 leading-relaxed animate-fade-in px-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.2 }}
@@ -109,7 +167,7 @@ function App() {
         )}
       </motion.div>
       {/* Footer */}
-      <footer className="relative z-10 mt-8 text-center text-xs text-gray-400">
+      <footer className="relative z-10 mt-8 text-center text-xs text-gray-400 px-4">
         <span className="inline-block bg-white/70 px-4 py-2 rounded-full shadow border border-gray-100">
           &copy; {new Date().getFullYear()} Accentify &mdash; Built with <span className="text-indigo-500">AI</span> & <span className="text-purple-500">Tech</span>
         </span>

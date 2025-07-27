@@ -100,8 +100,8 @@ export default function ResultsChart({ data }) {
     : '0';
 
   return (
-    <motion.div 
-      className="bg-white shadow-2xl rounded-3xl p-8 w-full animate-fade-in"
+    <div 
+      className="bg-white shadow-2xl rounded-3xl p-8 w-full animate-fade-in sm:pl-20 overflow-hidden"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -120,41 +120,53 @@ export default function ResultsChart({ data }) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 items-center">
-        <motion.div 
+        <div 
           className="w-full"
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Bar data={chartData} options={chartOptions} />
-        </motion.div>
+        </div>
 
         <div className="space-y-6">
-          <motion.div 
+          <div 
             className="bg-gradient-to-r from-blue-100 to-blue-50 p-5 rounded-2xl shadow-md border border-blue-200"
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ 
+              scale: 0.7,
+              transition: { duration: 0.2 }
+            }}
+            style={{ transformOrigin: 'center' }}
           >
             <div className="flex items-center mb-2">
               <Trophy className="mr-2 text-yellow-500" size={22} />
               <h3 className="font-semibold text-gray-700">Detected Accent</h3>
             </div>
             <p className="text-2xl font-extrabold text-blue-700 tracking-wide animate-pulse">{accent}</p>
-          </motion.div>
+          </div>
 
-          <motion.div 
+          <div 
             className="bg-gradient-to-r from-green-100 to-green-50 p-5 rounded-2xl shadow-md border border-green-200"
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ 
+              scale: 0.7,
+              transition: { duration: 0.2 }
+            }}
+            style={{ transformOrigin: 'center' }}
           >
             <div className="flex items-center mb-2">
               <Target className="mr-2 text-green-500" size={22} />
               <h3 className="font-semibold text-gray-700">Confidence</h3>
             </div>
             <p className="text-2xl font-extrabold text-green-700 tracking-wide">{(score * 100).toFixed(2)}%</p>
-          </motion.div>
+          </div>
 
-          <motion.div 
+          <div 
             className="bg-gradient-to-r from-gray-100 to-gray-50 p-5 rounded-2xl shadow-md border border-gray-200"
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ 
+              scale: 0.7,
+              transition: { duration: 0.2 }
+            }}
+            style={{ transformOrigin: 'center' }}
           >
             <h3 className="font-semibold text-gray-700 mb-2">Accent Probabilities</h3>
             <ul className="space-y-1">
@@ -165,9 +177,9 @@ export default function ResultsChart({ data }) {
                 </li>
               ))}
             </ul>
-          </motion.div>
+          </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

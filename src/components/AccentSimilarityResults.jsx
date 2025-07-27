@@ -117,14 +117,14 @@ export default function AccentSimilarityResults({ data }) {
   ];
 
   return (
-    <motion.div 
+    <div 
       className="w-full max-w-xl space-y-8 animate-fade-in"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
     >
       {/* Main Result Card */}
-      <motion.div 
+      <div 
         className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100"
         whileHover={{ scale: 1.01 }}
       >
@@ -150,17 +150,17 @@ export default function AccentSimilarityResults({ data }) {
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
-            <motion.div 
+            <div 
               className="bg-purple-600 h-3 rounded-full transition-all duration-500"
               style={{ width: `${similarity_percentage}%` }}
               initial={{ width: 0 }}
               animate={{ width: `${similarity_percentage}%` }}
               transition={{ duration: 1 }}
-            ></motion.div>
+            ></div>
           </div>
         </div>
         {/* Detected Accent */}
-        <motion.div 
+        <div 
           className="mb-6 p-4 bg-blue-50 rounded-2xl shadow-sm"
           whileHover={{ scale: 1.02 }}
         >
@@ -175,10 +175,10 @@ export default function AccentSimilarityResults({ data }) {
           <div className="text-xs text-gray-500 mt-1">
             Confidence: {(detected_confidence * 100).toFixed(1)}%
           </div>
-        </motion.div>
+        </div>
         {/* AI Message */}
         {message && (
-          <motion.div 
+          <div 
             className="p-4 bg-gray-50 rounded-2xl shadow-sm"
             whileHover={{ scale: 1.01 }}
           >
@@ -188,12 +188,12 @@ export default function AccentSimilarityResults({ data }) {
                 {message}
               </p>
             </div>
-          </motion.div>
+          </div>
         )}
-      </motion.div>
+      </div>
       {/* Tabs for Top Accents and All Probabilities */}
       {(top_3_accents.length > 0 || all_probabilities) && (
-        <motion.div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100" whileHover={{ scale: 1.01 }}>
+        <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100" whileHover={{ scale: 1.01 }}>
           <div className="flex mb-6 gap-4">
             {tabButtons.map((tab) => (
               <button
@@ -237,8 +237,8 @@ export default function AccentSimilarityResults({ data }) {
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 } 
