@@ -19,6 +19,8 @@ export default function AccentPredictor({ onResult }) {
   const audioContextRef = useRef(null);
   const audioRef = useRef(null);
   const wavBlobRef = useRef(null);
+  const recordedBlobRef = useRef(null); // Track the actual blob to send
+  const recordedExtRef = useRef('wav'); // Track the actual extension
 
 
   // Available accents for dropdown
@@ -183,6 +185,9 @@ export default function AccentPredictor({ onResult }) {
     try {
       setError(null);
       audioChunksRef.current = [];
+      wavBlobRef.current = null;
+      recordedBlobRef.current = null;
+      recordedExtRef.current = 'wav';
 
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -197,16 +202,18 @@ export default function AccentPredictor({ onResult }) {
 
       // Try different MIME types for broader compatibility
       const mimeTypes = [
-        'audio/webm',
-        'audio/mp4',
-        'audio/ogg',
-        'audio/mpeg'
+        { type: 'audio/webm', ext: 'webm' },
+        { type: 'audio/mp4', ext: 'mp4' },
+        { type: 'audio/ogg', ext: 'ogg' },
+        { type: 'audio/mpeg', ext: 'mp3' }
       ];
 
       let supportedMimeType = '';
-      for (const mimeType of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(mimeType)) {
-          supportedMimeType = mimeType;
+      let supportedExt = 'webm';
+      for (const { type, ext } of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          supportedMimeType = type;
+          supportedExt = ext;
           break;
         }
       }
@@ -227,6 +234,8 @@ export default function AccentPredictor({ onResult }) {
       mediaRecorder.onstop = async () => {
         // Create blob from collected chunks
         const audioBlob = new Blob(audioChunksRef.current, { type: supportedMimeType });
+        recordedBlobRef.current = audioBlob;
+        recordedExtRef.current = supportedExt;
 
         // Only process if there's audio data
         if (audioBlob.size > 0) {
@@ -234,13 +243,19 @@ export default function AccentPredictor({ onResult }) {
             // Convert to WAV
             const wavBlob = await convertToWav(audioBlob);
             wavBlobRef.current = wavBlob;
-            
+            recordedBlobRef.current = wavBlob;
+            recordedExtRef.current = 'wav';
             // Create URL for audio playback
             const url = URL.createObjectURL(wavBlob);
             setAudioUrl(url);
           } catch (error) {
-            console.error('Error converting audio:', error);
-            setError(error.message || 'Error processing audio');
+            // If conversion fails, use original format
+            wavBlobRef.current = null;
+            recordedBlobRef.current = audioBlob;
+            recordedExtRef.current = supportedExt;
+            const url = URL.createObjectURL(audioBlob);
+            setAudioUrl(url);
+            setError('WAV conversion failed, using original format.');
           }
         }
 
@@ -282,7 +297,7 @@ export default function AccentPredictor({ onResult }) {
   }, [isPlaying]);
 
   const sendAudio = useCallback(async () => {
-    if (!wavBlobRef.current) {
+    if (!recordedBlobRef.current) {
       setError('No recording available to send');
       return;
     }
@@ -292,7 +307,8 @@ export default function AccentPredictor({ onResult }) {
 
     try {
       const form = new FormData();
-      form.append('file', wavBlobRef.current, 'audio.wav');
+      const ext = recordedExtRef.current || 'wav';
+      form.append('file', recordedBlobRef.current, `audio.${ext}`);
       form.append('target_accent', selectedAccent);
 
       const response = await fetch(`${BACKEND_BASE_URL}/classify_accent`, {
